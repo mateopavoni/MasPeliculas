@@ -8,5 +8,6 @@ namespace MasPelículasAPI.DTOs
         [StringLength(120)]
         public string Nombre { get; set; } = null!;
         public DateTime FechaNacimiento { get; set; }
+        public IFormFile Foto { get; set; }
     }
 }
