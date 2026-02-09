@@ -1,0 +1,24 @@
+# --- Build (Archivos generados al compilar, JAMÁS se suben) ---
+[Bb]in/
+[Oo]bj/
+
+# --- Visual Studio / Editor (Archivos de configuración de tu PC) ---
+.vs/
+*.user
+*.suo
+
+# --- Configuración y Secretos (CRÍTICO) ---
+# En .NET, a veces guardamos secretos en appsettings.Development.json
+# Si vas a poner contraseñas reales ahí, descomenta la siguiente línea:
+# appsettings.Development.json
+
+# Si decides usar librerías de .env (como DotNetEnv)
+.env
+.env.local
+
+# Bases de datos locales (si usas SQLite)
+*.db
+*.sqlite
+
+# Logs
+*.log
