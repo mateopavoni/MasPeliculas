@@ -1,6 +1,15 @@
-﻿namespace MasPelículasAPI
+﻿using MasPelículasAPI.Entidades;
+using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
+
+namespace MasPelículasAPI
 {
-    public class ApplicationDbContext
+    public class ApplicationDbContext : DbContext
     {
+        public ApplicationDbContext(DbContextOptions options) : base(options)
+        {
+        }
+
+        public DbSet<Genero> Generos { get; set; }
     }
 }
