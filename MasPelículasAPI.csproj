@@ -17,6 +17,8 @@
     </PackageReference>
 
     <PackageReference Include="AutoMapper" Version="13.0.1" />
+
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
   </ItemGroup>
 
   <ItemGroup>
