@@ -149,5 +149,38 @@ namespace MasPelículasAPI.Controllers
             await context.SaveChangesAsync();
             return NoContent();
         }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<PeliculaPatchDTO> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return BadRequest();
+            }
+
+            var entidad = await context.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entidad == null)
+            {
+                return NotFound();
+            }
+
+            var entidadDTO = mapper.Map<PeliculaPatchDTO>(entidad);
+
+            patchDocument.ApplyTo(entidadDTO, ModelState);
+
+            var esValido = TryValidateModel(entidadDTO);
+
+            if (!esValido)
+            {
+                return BadRequest(ModelState);
+            }
+
+            mapper.Map(entidadDTO, entidad);
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
