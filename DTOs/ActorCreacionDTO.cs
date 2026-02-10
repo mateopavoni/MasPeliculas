@@ -1,4 +1,6 @@
 ﻿using MasPelículasAPI.Validaciones;
+using MasPeliculasAPI.Validaciones;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace MasPelículasAPI.DTOs
@@ -8,8 +10,11 @@ namespace MasPelículasAPI.DTOs
         [Required]
         [StringLength(120)]
         public string Nombre { get; set; } = null!;
+
         public DateTime FechaNacimiento { get; set; }
-        [PesoArchivoValidacion(4)]
+
+        [PesoArchivoValidacion(pesoMaximoEnMegaBytes: 4)]
+        [TipoArchivoValidacion(GrupoTipoArchivo.Imagen)]
         public IFormFile Foto { get; set; }
     }
 }
