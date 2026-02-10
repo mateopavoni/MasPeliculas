@@ -26,6 +26,21 @@ namespace MasPelículasAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<List<PeliculaDTO>>> Get()
         {
+            var top = 5;
+            var hoy = DateTime.Today;
+
+            var proximosEstrenos = await context.Peliculas
+                .Where(x => x.FechaEstreno > hoy)
+                .OrderBy(x => x.FechaEstreno)
+                .Take(top)
+                .ToListAsync();
+
+            var enCines = await context.Peliculas
+                .Where(x => x.EnCines)
+                .OrderByDescending(x => x.FechaEstreno)
+                .Take(top)
+                .ToListAsync();
+
             var peliculas = await context.Peliculas
                 .Include(x => x.PeliculasActores).ThenInclude(x => x.Actor)
                 .Include(x => x.PeliculasGeneros).ThenInclude(x => x.Genero)
