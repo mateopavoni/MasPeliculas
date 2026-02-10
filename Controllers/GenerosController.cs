@@ -29,7 +29,7 @@ namespace MasPelículasAPI.Controllers
             return dtos;
         }
 
-        [HttpGet("{id:int}")] // Es buena práctica ser explícito con el tipo :int
+        [HttpGet("{id:int}")] 
         public async Task<ActionResult<GeneroDTO>> GetById(int id)
         {
             var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
@@ -46,23 +46,21 @@ namespace MasPelículasAPI.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] GeneroCreacionDTO generoCreacionDTO)
         {
-            // Mapeamos de DTO de creación -> Entidad
             var entidad = mapper.Map<Genero>(generoCreacionDTO);
 
             context.Add(entidad);
             await context.SaveChangesAsync();
 
-            // Mapeamos de Entidad guardada -> DTO de lectura (para devolver el ID generado)
             var generoDto = mapper.Map<GeneroDTO>(entidad);
 
             return new CreatedAtActionResult(
                 actionName: nameof(GetById),
-                controllerName: "Generos", // O null, ya que estamos en el mismo controller
+                controllerName: "Generos",
                 routeValues: new { id = generoDto.Id },
                 value: generoDto);
         }
 
-        [HttpPut("{id:int}")] // Agregado :int por seguridad
+        [HttpPut("{id:int}")] 
         public async Task<ActionResult> Put(int id, [FromBody] GeneroCreacionDTO generoCreacionDTO)
         {
             var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
@@ -72,7 +70,6 @@ namespace MasPelículasAPI.Controllers
                 return NotFound();
             }
 
-            // AutoMapper actualiza la entidad existente con los datos del DTO
             mapper.Map(generoCreacionDTO, entidad);
 
             await context.SaveChangesAsync();
@@ -82,8 +79,6 @@ namespace MasPelículasAPI.Controllers
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> Delete(int id)
         {
-            // Eficiencia: ExecuteDeleteAsync es mejor en .NET 7+, 
-            // pero esta forma clásica está bien para empezar.
             var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
 
             if (entidad == null)
