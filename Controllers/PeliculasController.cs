@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using MasPelículasAPI.DTOs;
-using MasPelículasAPI.Entidades; // Necesario para la clase Pelicula
+using MasPelículasAPI.Entidades;
 using MasPelículasAPI.Servicios;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // Necesario para ToListAsync y FirstOrDefaultAsync
+using Microsoft.EntityFrameworkCore;
 
 namespace MasPelículasAPI.Controllers
 {
@@ -26,15 +26,21 @@ namespace MasPelículasAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<List<PeliculaDTO>>> Get()
         {
-            var peliculas = await context.Peliculas.ToListAsync();
+            var peliculas = await context.Peliculas
+                .Include(x => x.PeliculasActores).ThenInclude(x => x.Actor)
+                .Include(x => x.PeliculasGeneros).ThenInclude(x => x.Genero)
+                .ToListAsync();
+
             return mapper.Map<List<PeliculaDTO>>(peliculas);
         }
-
 
         [HttpGet("{id:int}", Name = "obtenerPelicula")]
         public async Task<ActionResult<PeliculaDTO>> Get(int id)
         {
-            var pelicula = await context.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
+            var pelicula = await context.Peliculas
+                .Include(x => x.PeliculasActores).ThenInclude(x => x.Actor)
+                .Include(x => x.PeliculasGeneros).ThenInclude(x => x.Genero)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (pelicula == null)
             {
@@ -56,27 +62,26 @@ namespace MasPelículasAPI.Controllers
                     await peliculaCreacionDTO.Poster.CopyToAsync(memoryStream);
                     var contenido = memoryStream.ToArray();
                     var extension = Path.GetExtension(peliculaCreacionDTO.Poster.FileName);
-
-                    pelicula.Poster = await almacenadorArchivos.GuardarArchivo(
-                        contenido,
-                        extension,
-                        contenedor,
-                        peliculaCreacionDTO.Poster.ContentType);
+                    pelicula.Poster = await almacenadorArchivos.GuardarArchivo(contenido, extension, contenedor, peliculaCreacionDTO.Poster.ContentType);
                 }
             }
+
+            AsignarOrdenActores(pelicula);
 
             context.Add(pelicula);
             await context.SaveChangesAsync();
 
             var peliculaDTO = mapper.Map<PeliculaDTO>(pelicula);
-
             return CreatedAtRoute("obtenerPelicula", new { id = pelicula.Id }, peliculaDTO);
         }
 
         [HttpPut("{id:int}")]
         public async Task<ActionResult> Put(int id, [FromForm] PeliculaCreacionDTO peliculaCreacionDTO)
         {
-            var pelicula = await context.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
+            var pelicula = await context.Peliculas
+                .Include(x => x.PeliculasActores)
+                .Include(x => x.PeliculasGeneros)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (pelicula == null)
             {
@@ -93,14 +98,11 @@ namespace MasPelículasAPI.Controllers
                     var contenido = memoryStream.ToArray();
                     var extension = Path.GetExtension(peliculaCreacionDTO.Poster.FileName);
 
-                    pelicula.Poster = await almacenadorArchivos.EditarArchivo(
-                        contenido,
-                        extension,
-                        contenedor,
-                        pelicula.Poster, 
-                        peliculaCreacionDTO.Poster.ContentType);
+                    pelicula.Poster = await almacenadorArchivos.EditarArchivo(contenido, extension, contenedor, pelicula.Poster, peliculaCreacionDTO.Poster.ContentType);
                 }
             }
+
+            AsignarOrdenActores(pelicula);
 
             await context.SaveChangesAsync();
             return NoContent();
@@ -122,6 +124,17 @@ namespace MasPelículasAPI.Controllers
             await almacenadorArchivos.BorrarArchivo(pelicula.Poster, contenedor);
 
             return NoContent();
+        }
+
+        private void AsignarOrdenActores(Pelicula pelicula)
+        {
+            if (pelicula.PeliculasActores != null)
+            {
+                for (int i = 0; i < pelicula.PeliculasActores.Count; i++)
+                {
+                    pelicula.PeliculasActores[i].Orden = i;
+                }
+            }
         }
     }
 }
