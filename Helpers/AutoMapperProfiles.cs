@@ -13,6 +13,8 @@ namespace MasPelículasAPI.Helpers
             CreateMap<Actor, ActorDTO>().ReverseMap();
             CreateMap<ActorCreacionDTO, Actor>();
             CreateMap<ActorPatchDTO, Actor>().ReverseMap();
+            CreateMap<Pelicula, PeliculaDTO>().ReverseMap();
+
         }
     }
 }
