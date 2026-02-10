@@ -2,7 +2,8 @@
 
 namespace MasPelículasAPI.Entidades
 {
-    public class Pelicula
+    // Agregamos : IId
+    public class Pelicula : IId
     {
         public int Id { get; set; }
         [Required]
