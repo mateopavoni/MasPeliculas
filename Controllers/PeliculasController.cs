@@ -5,6 +5,7 @@ using MasPelículasAPI.Helpers;
 using MasPelículasAPI.Servicios;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
 
 namespace MasPelículasAPI.Controllers
 {
@@ -15,13 +16,17 @@ namespace MasPelículasAPI.Controllers
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
         private readonly IAlmacenadorArchivos almacenadorArchivos;
+        private readonly ILogger<PeliculasController> logger;
         private readonly string contenedor = "peliculas";
-
-        public PeliculasController(ApplicationDbContext context, IMapper mapper, IAlmacenadorArchivos almacenadorArchivos)
+        public PeliculasController(ApplicationDbContext context,
+            IMapper mapper,
+            IAlmacenadorArchivos almacenadorArchivos,
+            ILogger<PeliculasController> logger)
         {
             this.context = context;
             this.mapper = mapper;
             this.almacenadorArchivos = almacenadorArchivos;
+            this.logger = logger;
         }
 
         [HttpGet]
@@ -30,7 +35,6 @@ namespace MasPelículasAPI.Controllers
             var top = 5;
             var hoy = DateTime.Today;
 
-    
             var proximosEstrenos = await context.Peliculas
                 .Where(x => x.FechaEstreno > hoy)
                 .OrderBy(x => x.FechaEstreno)
@@ -78,6 +82,25 @@ namespace MasPelículasAPI.Controllers
                     .Contains((int)filtroPeliculasDTO.GeneroId));
             }
 
+            if (!string.IsNullOrEmpty(filtroPeliculasDTO.CampoOrdenar))
+            {
+                var tipoOrden = filtroPeliculasDTO.OrdenAscendente ? "ascending" : "descending";
+
+                try
+                {
+                    peliculasQueryable = peliculasQueryable
+                        .OrderBy($"{filtroPeliculasDTO.CampoOrdenar} {tipoOrden}");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error al ordenar por el campo: {campo}", filtroPeliculasDTO.CampoOrdenar);
+                    peliculasQueryable = peliculasQueryable.OrderBy(x => x.Titulo);
+                }
+            }
+            else
+            {
+                peliculasQueryable = peliculasQueryable.OrderBy(x => x.Titulo);
+            }
 
             await HttpContext.InsertarParametrosPaginacion(peliculasQueryable, filtroPeliculasDTO.CantidadRegistrosPorPagina);
 
@@ -85,8 +108,6 @@ namespace MasPelículasAPI.Controllers
 
             return mapper.Map<List<PeliculaDTO>>(peliculas);
         }
-
-
 
         [HttpGet("{id:int}", Name = "obtenerPelicula")]
         public async Task<ActionResult<PeliculaDetallesDTO>> Get(int id)
