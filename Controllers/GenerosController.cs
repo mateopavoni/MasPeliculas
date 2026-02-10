@@ -1,94 +1,46 @@
 ﻿using AutoMapper;
+using MasPelículasAPI;
+using MasPelículasAPI.Controllers;
 using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace MasPelículasAPI.Controllers
+[ApiController]
+[Route("api/generos")]
+public class GenerosController : CustomBaseController
 {
-    [ApiController]
-    [Route("api/generos")]
-    public class GenerosController : ControllerBase
+    public GenerosController(ApplicationDbContext context, IMapper mapper)
+        : base(context, mapper)
     {
-        private readonly ApplicationDbContext context;
-        private readonly IMapper mapper;
+    }
 
-        public GenerosController(ApplicationDbContext context, IMapper mapper)
-        {
-            this.context = context;
-            this.mapper = mapper;
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<GeneroDTO>>> Get()
+    {
+        return await Get<Genero, GeneroDTO>();
+    }
 
-        [HttpGet]
-        public async Task<ActionResult<List<GeneroDTO>>> GetAll()
-        {
-            var entidades = await context.Generos.ToListAsync();
+    [HttpGet("{id:int}", Name = "obtenerGenero")]
+    public async Task<ActionResult<GeneroDTO>> Get(int id)
+    {
+        return await Get<Genero, GeneroDTO>(id);
+    }
 
-            var dtos = mapper.Map<List<GeneroDTO>>(entidades);
+    [HttpPost]
+    public async Task<ActionResult> Post([FromBody] GeneroCreacionDTO generoCreacionDTO)
+    {
+        return await Post<GeneroCreacionDTO, Genero, GeneroDTO>(generoCreacionDTO, "obtenerGenero");
+    }
 
-            return dtos;
-        }
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult> Put(int id, [FromBody] GeneroCreacionDTO generoCreacionDTO)
+    {
+        return await Put<GeneroCreacionDTO, Genero>(id, generoCreacionDTO);
+    }
 
-        [HttpGet("{id:int}")] 
-        public async Task<ActionResult<GeneroDTO>> GetById(int id)
-        {
-            var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entidad == null)
-            {
-                return NotFound();
-            }
-
-            var dto = mapper.Map<GeneroDTO>(entidad);
-            return dto;
-        }
-
-        [HttpPost]
-        public async Task<ActionResult> Post([FromBody] GeneroCreacionDTO generoCreacionDTO)
-        {
-            var entidad = mapper.Map<Genero>(generoCreacionDTO);
-
-            context.Add(entidad);
-            await context.SaveChangesAsync();
-
-            var generoDto = mapper.Map<GeneroDTO>(entidad);
-
-            return new CreatedAtActionResult(
-                actionName: nameof(GetById),
-                controllerName: "Generos",
-                routeValues: new { id = generoDto.Id },
-                value: generoDto);
-        }
-
-        [HttpPut("{id:int}")] 
-        public async Task<ActionResult> Put(int id, [FromBody] GeneroCreacionDTO generoCreacionDTO)
-        {
-            var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entidad == null)
-            {
-                return NotFound();
-            }
-
-            mapper.Map(generoCreacionDTO, entidad);
-
-            await context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        [HttpDelete("{id:int}")]
-        public async Task<ActionResult> Delete(int id)
-        {
-            var entidad = await context.Generos.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (entidad == null)
-            {
-                return NotFound();
-            }
-
-            context.Remove(entidad);
-            await context.SaveChangesAsync();
-            return NoContent();
-        }
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        return await Delete<Genero>(id);
     }
 }

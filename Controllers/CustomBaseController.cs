@@ -2,7 +2,6 @@
 using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades;
 using MasPelículasAPI.Helpers;
-using MasPelículasAPI.Utilidades; // Necesario para tus extensiones de paginación
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
