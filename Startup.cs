@@ -1,7 +1,9 @@
-﻿using AutoMapper;// Necesario para UseSqlServer
+﻿using AutoMapper;
+using MasPelículasAPI.Helpers; // Asegúrate de que este using exista
 using MasPelículasAPI.Servicios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NetTopologySuite.Geometries;
 
 namespace MasPelículasAPI
 {
@@ -9,21 +11,17 @@ namespace MasPelículasAPI
     {
         public IConfiguration Configuration { get; }
 
-        // 1. El constructor solo debe recibir y asignar la configuración
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
-        // 2. Aquí es donde se procesa la lógica y se inyectan los servicios
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(Startup).Assembly);
+            services.AddAutoMapper(typeof(AutoMapperProfiles));
 
             services.AddControllers().AddNewtonsoftJson();
-
             services.AddEndpointsApiExplorer();
-
             services.AddHttpContextAccessor();
             services.AddScoped<IAlmacenadorArchivos, AlmacenadorArchivosLocal>();
 
@@ -33,7 +31,6 @@ namespace MasPelículasAPI
             var dbPass = Configuration["DB_PASS"];
 
             string connectionString;
-
             if (string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbPass))
             {
                 connectionString = $"Server={dbServer};Database={dbName};Trusted_Connection=True;TrustServerCertificate=True;";
@@ -44,26 +41,23 @@ namespace MasPelículasAPI
             }
 
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString));
+            {
+                options.UseSqlServer(connectionString, sqlServerOptions =>
+                {
+                    sqlServerOptions.UseNetTopologySuite();
+                });
+            });
+
+            services.AddSingleton(provider => new GeometryFactory(new PrecisionModel(), 4326));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-
-            }
-
+            if (env.IsDevelopment()) { }
             app.UseHttpsRedirection();
-
             app.UseRouting();
-
             app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

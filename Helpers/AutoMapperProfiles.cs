@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
 using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades;
+using NetTopologySuite.Geometries;
 
 namespace MasPelículasAPI.Helpers
 {
     public class AutoMapperProfiles : Profile
     {
-        public AutoMapperProfiles()
+        public AutoMapperProfiles(GeometryFactory geometryFactory)
         {
             CreateMap<Genero, GeneroDTO>().ReverseMap();
             CreateMap<GeneroCreacionDTO, Genero>();
@@ -28,8 +29,13 @@ namespace MasPelículasAPI.Helpers
                 .ForMember(x => x.Generos, options => options.MapFrom(MapPeliculaGeneros))
                 .ForMember(x => x.Actores, options => options.MapFrom(MapPeliculaActores));
 
-            CreateMap<SalaDeCine, SalaDeCineDTO>().ReverseMap();
-            CreateMap<SalaDeCineCreacionDTO, SalaDeCine>();
+            CreateMap<SalaDeCineCreacionDTO, SalaDeCine>()
+                .ForMember(x => x.Ubicacion, x => x.MapFrom(dto =>
+                    geometryFactory.CreatePoint(new Coordinate(dto.Longitud, dto.Latitud))));
+
+            CreateMap<SalaDeCine, SalaDeCineDTO>()
+                .ForMember(x => x.Latitud, x => x.MapFrom(y => y.Ubicacion.Y))
+                .ForMember(x => x.Longitud, x => x.MapFrom(y => y.Ubicacion.X));
         }
 
 
