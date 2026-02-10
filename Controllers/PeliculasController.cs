@@ -3,6 +3,7 @@ using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades;
 using MasPelículasAPI.Helpers;
 using MasPelículasAPI.Servicios;
+using Microsoft.AspNetCore.JsonPatch; 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
@@ -11,20 +12,18 @@ namespace MasPelículasAPI.Controllers
 {
     [ApiController]
     [Route("api/peliculas")]
-    public class PeliculasController : ControllerBase
+    public class PeliculasController : CustomBaseController
     {
-        private readonly ApplicationDbContext context;
-        private readonly IMapper mapper;
         private readonly IAlmacenadorArchivos almacenadorArchivos;
         private readonly ILogger<PeliculasController> logger;
         private readonly string contenedor = "peliculas";
+
         public PeliculasController(ApplicationDbContext context,
             IMapper mapper,
             IAlmacenadorArchivos almacenadorArchivos,
             ILogger<PeliculasController> logger)
+            : base(context, mapper)
         {
-            this.context = context;
-            this.mapper = mapper;
             this.almacenadorArchivos = almacenadorArchivos;
             this.logger = logger;
         }
@@ -201,6 +200,12 @@ namespace MasPelículasAPI.Controllers
             await almacenadorArchivos.BorrarArchivo(pelicula.Poster, contenedor);
 
             return NoContent();
+        }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<PeliculaPatchDTO> patchDocument)
+        {
+             return await Patch<Pelicula, PeliculaPatchDTO>(id, patchDocument);
         }
 
         private void AsignarOrdenActores(Pelicula pelicula)
