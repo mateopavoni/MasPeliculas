@@ -9,5 +9,7 @@ namespace MasPelículasAPI.DTOs
         [PesoArchivoValidacion(5)]
         [TipoArchivoValidacion(GrupoTipoArchivo.Imagen)]
         public IFormFile Poster { get; set; }
+
+        public List<int> GenerosIDs { get; set; }
     }
 }
