@@ -57,7 +57,7 @@ namespace MasPelículasAPI.Controllers
 
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put(int id, [FromFrom] ActorCreacionDTO actorCreacionDTO)
+        public async Task<ActionResult> Put(int id, [FromFor m] ActorCreacionDTO actorCreacionDTO)
         {
             var entidad = await context.Actores.FirstOrDefaultAsync(x => x.Id == id);
 
