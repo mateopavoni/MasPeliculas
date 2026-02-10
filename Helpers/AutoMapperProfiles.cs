@@ -27,6 +27,9 @@ namespace MasPelículasAPI.Helpers
             CreateMap<Pelicula, PeliculaDetallesDTO>()
                 .ForMember(x => x.Generos, options => options.MapFrom(MapPeliculaGeneros))
                 .ForMember(x => x.Actores, options => options.MapFrom(MapPeliculaActores));
+
+            CreateMap<SalaDeCine, SalaDeCineDTO>().ReverseMap();
+            CreateMap<SalaDeCineCreacionDTO, SalaDeCine>();
         }
 
 
