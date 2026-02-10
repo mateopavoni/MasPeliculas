@@ -1,4 +1,5 @@
 ﻿using AutoMapper;// Necesario para UseSqlServer
+using MasPelículasAPI.Servicios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,8 +19,13 @@ namespace MasPelículasAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAutoMapper(typeof(Startup).Assembly);
-            services.AddControllers();
+
+            services.AddControllers().AddNewtonsoftJson();
+
             services.AddEndpointsApiExplorer();
+
+            services.AddHttpContextAccessor();
+            services.AddScoped<IAlmacenadorArchivos, AlmacenadorArchivosLocal>();
 
             var dbServer = Configuration["DB_SERVER"] ?? "localhost";
             var dbName = Configuration["DB_NAME"] ?? "MasPeliculasDB";
@@ -28,7 +34,6 @@ namespace MasPelículasAPI
 
             string connectionString;
 
-            // Si NO hay usuario o password en el .env, asumimos Autenticación de Windows
             if (string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbPass))
             {
                 connectionString = $"Server={dbServer};Database={dbName};Trusted_Connection=True;TrustServerCertificate=True;";

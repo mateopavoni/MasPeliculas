@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades; // Necesario para la clase Actor
 using Microsoft.AspNetCore.Mvc;
@@ -86,5 +87,37 @@ namespace MasPelículasAPI.Controllers
             await context.SaveChangesAsync();
             return NoContent();
         }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<ActorPatchDTO> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return BadRequest();
+            }
+
+            var entidad = await context.Actores.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entidad == null)
+            {
+                return NotFound();
+            }
+
+            var entidadDTO = mapper.Map<ActorPatchDTO>(entidad);
+
+            patchDocument.ApplyTo(entidadDTO, ModelState);
+
+            var esValido = TryValidateModel(entidadDTO);
+
+            if (!esValido)
+            {
+                return BadRequest(ModelState);
+            }
+
+            mapper.Map(entidadDTO, entidad);
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
-}
