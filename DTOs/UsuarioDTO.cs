@@ -2,7 +2,7 @@
 {
     public class UsuarioDTO
     {
-        public string Id { get; set; } // Cambiado de int a string
+        public string Id { get; set; } 
         public string Email { get; set; }
     }
 }

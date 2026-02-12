@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // Necesario para ToListAsync
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -18,12 +18,12 @@ namespace MasPelículasAPI.Controllers
         private readonly UserManager<IdentityUser> userManager;
         private readonly SignInManager<IdentityUser> signInManager;
         private readonly IConfiguration configuration;
-        private readonly ApplicationDbContext context; // Nueva inyección
+        private readonly ApplicationDbContext context;
 
         public CuentasController(UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
             IConfiguration configuration,
-            ApplicationDbContext context) // Inyectamos el contexto
+            ApplicationDbContext context)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -32,7 +32,7 @@ namespace MasPelículasAPI.Controllers
         }
 
         [HttpPost("registro")]
-        public async Task<ActionResult<RespuestaAutenticacionDTO>> Registrar(UserInfo userInfo)
+        public async Task<ActionResult> Registrar(UserInfo userInfo)
         {
             var usuario = new IdentityUser
             {
@@ -58,13 +58,12 @@ namespace MasPelículasAPI.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<RespuestaAutenticacionDTO>> Login(UserInfo userInfo)
+        public async Task<ActionResult> Login(UserInfo userInfo)
         {
             var usuario = await userManager.FindByEmailAsync(userInfo.Email);
 
             if (usuario is null)
             {
-
                 ModelState.AddModelError(string.Empty, "Login incorrecto");
                 return ValidationProblem();
             }
@@ -82,7 +81,8 @@ namespace MasPelículasAPI.Controllers
             }
         }
 
-        private async Task<RespuestaAutenticacionDTO> ConstruirToken(UserInfo userInfo)
+        // Método auxiliar que devuelve un objeto anónimo
+        private async Task<ActionResult> ConstruirToken(UserInfo userInfo)
         {
             var claims = new List<Claim>
             {
@@ -95,7 +95,6 @@ namespace MasPelículasAPI.Controllers
 
             claims.AddRange(claimsDB);
 
-            // Llave secreta desde appsettings.json
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["jwt:key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -109,16 +108,16 @@ namespace MasPelículasAPI.Controllers
                 signingCredentials: creds
             );
 
-            return new RespuestaAutenticacionDTO
+            // AQUÍ ESTÁ EL CAMBIO: Devolvemos un objeto anónimo directamente con Ok()
+            return Ok(new
             {
-                Token = new JwtSecurityTokenHandler().WriteToken(token),
-                Expiracion = expiration
-            };
+                token = new JwtSecurityTokenHandler().WriteToken(token),
+                expiracion = expiration
+            });
         }
 
-
         [HttpGet("listado")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<List<UsuarioDTO>>> GetUsuarios()
         {
             var usuarios = await context.Users
@@ -129,30 +128,29 @@ namespace MasPelículasAPI.Controllers
         }
 
         [HttpPost("asignar-rol")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         public async Task<ActionResult> AsignarRol(EditarRolDTO editarRolDTO)
         {
             var usuario = await userManager.FindByIdAsync(editarRolDTO.UsuarioId);
 
             if (usuario == null) { return NotFound("Usuario no encontrado"); }
 
-            await userManager.AddToRoleAsync(usuario, editarRolDTO.NombreRol);
+            await userManager.AddClaimAsync(usuario, new Claim(ClaimTypes.Role, editarRolDTO.NombreRol));
 
             return NoContent();
         }
 
         [HttpPost("remover-rol")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         public async Task<ActionResult> RemoverRol(EditarRolDTO editarRolDTO)
         {
             var usuario = await userManager.FindByIdAsync(editarRolDTO.UsuarioId);
 
             if (usuario == null) { return NotFound("Usuario no encontrado"); }
 
-            await userManager.RemoveFromRoleAsync(usuario, editarRolDTO.NombreRol);
+            await userManager.RemoveClaimAsync(usuario, new Claim(ClaimTypes.Role, editarRolDTO.NombreRol));
 
             return NoContent();
         }
-.
     }
 }

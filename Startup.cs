@@ -2,10 +2,10 @@
 using AutoMapper;
 using MasPelículasAPI.Helpers;
 using MasPelículasAPI.Servicios;
-using Microsoft.AspNetCore.Authentication.JwtBearer; 
-using Microsoft.AspNetCore.Identity; 
+using Microsoft.AspNetCore.Authentication.JwtBearer; // Necesario para JWT
+using Microsoft.AspNetCore.Identity; // Necesario para Identity
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens; 
+using Microsoft.IdentityModel.Tokens; // Necesario para validar tokens
 using NetTopologySuite.Geometries;
 
 namespace MasPelículasAPI
@@ -23,18 +23,21 @@ namespace MasPelículasAPI
         {
             services.AddAutoMapper(typeof(AutoMapperProfiles));
 
+            // 1. Configuración de Identity
+            // Esto conecta Entity Framework con el sistema de usuarios de .NET Core
             services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            // 2. Configuración de Autenticación JWT
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
                     options.MapInboundClaims = false;
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = false,
-                        ValidateAudience = false, 
+                        ValidateIssuer = false, // En desarrollo solemos dejarlo en false
+                        ValidateAudience = false, // En desarrollo solemos dejarlo en false
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(
