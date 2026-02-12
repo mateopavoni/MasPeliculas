@@ -1,8 +1,11 @@
-﻿using AutoMapper;
-using MasPelículasAPI.Helpers; // Asegúrate de que este using exista
+﻿using System.Text;
+using AutoMapper;
+using MasPelículasAPI.Helpers;
 using MasPelículasAPI.Servicios;
+using Microsoft.AspNetCore.Authentication.JwtBearer; 
+using Microsoft.AspNetCore.Identity; 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens; 
 using NetTopologySuite.Geometries;
 
 namespace MasPelículasAPI
@@ -19,6 +22,25 @@ namespace MasPelículasAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAutoMapper(typeof(AutoMapperProfiles));
+
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.MapInboundClaims = false;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false, 
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(Configuration["jwt:key"]!))
+                    };
+                });
 
             services.AddControllers().AddNewtonsoftJson();
             services.AddEndpointsApiExplorer();
@@ -54,9 +76,14 @@ namespace MasPelículasAPI
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment()) { }
+
             app.UseHttpsRedirection();
             app.UseRouting();
+
+            app.UseAuthentication();
+
             app.UseAuthorization();
+
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
