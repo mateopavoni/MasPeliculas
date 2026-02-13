@@ -1,12 +1,17 @@
 ﻿using AutoMapper;
+using MasPelículas.Tests;
 using MasPelículasAPI;
 using MasPelículasAPI.Helpers;
+using Microsoft.AspNetCore.Authorization; // Necesario para IAuthorizationHandler
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite; // Necesario para NtsGeometryServices
+using Microsoft.Extensions.DependencyInjection;
+using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using System;
+using System.Linq;
 using System.Security.Claims;
 
 namespace MasPeliculas.Tests
@@ -47,6 +52,36 @@ namespace MasPeliculas.Tests
             {
                 HttpContext = new DefaultHttpContext() { User = user }
             };
+        }
+
+        protected WebApplicationFactory<Startup> ConstruirWebApplicationFactory(string nombreDB)
+        {
+            return new WebApplicationFactory<Startup>()
+                .WithWebHostBuilder(builder =>
+                {
+                    builder.ConfigureServices(services =>
+                    {
+                        var descriptor = services.SingleOrDefault(
+                            d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+
+                        if (descriptor != null)
+                        {
+                            services.Remove(descriptor);
+                        }
+
+                        services.AddDbContext<ApplicationDbContext>(options =>
+                        {
+                            options.UseInMemoryDatabase(nombreDB);
+                        });
+
+                        services.AddControllers(options =>
+                        {
+                            options.Filters.Add(new UsuarioFalsoFiltro());
+                        });
+
+                        services.AddSingleton<IAuthorizationHandler, AllowAnonymousHandler>();
+                    });
+                });
         }
     }
 }
