@@ -36,6 +36,12 @@ namespace MasPelículasAPI.Helpers
             CreateMap<SalaDeCine, SalaDeCineDTO>()
                 .ForMember(x => x.Latitud, x => x.MapFrom(y => y.Ubicacion.Y))
                 .ForMember(x => x.Longitud, x => x.MapFrom(y => y.Ubicacion.X));
+
+            CreateMap<Review, ReviewDTO>()
+                .ForMember(dto => dto.UsuarioNombre,
+                           ent => ent.MapFrom(prop => prop.Usuario.UserName));
+
+            CreateMap<ReviewCreacionDTO, Review>();
         }
 
 
