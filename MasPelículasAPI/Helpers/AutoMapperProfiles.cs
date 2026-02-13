@@ -1,12 +1,19 @@
 ﻿using AutoMapper;
 using MasPelículasAPI.DTOs;
 using MasPelículasAPI.Entidades;
+using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using System.Collections.Generic;
 
 namespace MasPelículasAPI.Helpers
 {
     public class AutoMapperProfiles : Profile
     {
+        public AutoMapperProfiles()
+            : this(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326))
+        {
+        }
+
         public AutoMapperProfiles(GeometryFactory geometryFactory)
         {
             CreateMap<Genero, GeneroDTO>().ReverseMap();
@@ -43,7 +50,6 @@ namespace MasPelículasAPI.Helpers
 
             CreateMap<ReviewCreacionDTO, Review>();
         }
-
 
         private List<PeliculasGeneros> MapPeliculasGeneros(PeliculaCreacionDTO peliculaCreacionDTO, Pelicula pelicula)
         {

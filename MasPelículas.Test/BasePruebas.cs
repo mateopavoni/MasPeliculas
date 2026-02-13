@@ -2,12 +2,13 @@
 using MasPelículas.Tests;
 using MasPelículasAPI;
 using MasPelículasAPI.Helpers;
-using Microsoft.AspNetCore.Authorization; // Necesario para IAuthorizationHandler
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using System;
@@ -24,8 +25,7 @@ namespace MasPeliculas.Tests
                 .UseInMemoryDatabase(nombreDB)
                 .Options;
 
-            var dbContext = new ApplicationDbContext(options);
-            return dbContext;
+            return new ApplicationDbContext(options);
         }
 
         protected IMapper ConfigurarAutoMapper()
@@ -39,21 +39,6 @@ namespace MasPeliculas.Tests
             return config.CreateMapper();
         }
 
-        protected void ConstruirControllerUsuario(ControllerBase controller, string idUsuario)
-        {
-            var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, idUsuario),
-                new Claim(ClaimTypes.Email, "ejemplo@prueba.com"),
-                new Claim(ClaimTypes.Name, "usuario_prueba")
-            }, "TestAuthentication"));
-
-            controller.ControllerContext = new ControllerContext()
-            {
-                HttpContext = new DefaultHttpContext() { User = user }
-            };
-        }
-
         protected WebApplicationFactory<Startup> ConstruirWebApplicationFactory(string nombreDB)
         {
             return new WebApplicationFactory<Startup>()
@@ -61,27 +46,50 @@ namespace MasPeliculas.Tests
                 {
                     builder.ConfigureServices(services =>
                     {
-                        var descriptor = services.SingleOrDefault(
-                            d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+                        // 1. LIMPIEZA PROFUNDA DE EF CORE
+                        // Eliminamos las opciones, el contexto y CUALQUIER servicio interno de EF
+                        var efServices = services.Where(d =>
+                            d.ServiceType.FullName.Contains("EntityFrameworkCore") ||
+                            d.ServiceType == typeof(ApplicationDbContext) ||
+                            d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>)).ToList();
 
-                        if (descriptor != null)
+                        foreach (var service in efServices)
                         {
-                            services.Remove(descriptor);
+                            services.Remove(service);
                         }
 
+                        // 2. REGISTRAR IN-MEMORY DESDE CERO
                         services.AddDbContext<ApplicationDbContext>(options =>
                         {
                             options.UseInMemoryDatabase(nombreDB);
                         });
 
+                        // 3. LIMPIEZA Y REEMPLAZO DE AUTOMAPPER
+                        services.RemoveAll(typeof(IMapper));
+                        services.AddSingleton(ConfigurarAutoMapper());
+
+                        // 4. SOBRESCRIBIR CONTROLADORES Y SEGURIDAD
                         services.AddControllers(options =>
                         {
                             options.Filters.Add(new UsuarioFalsoFiltro());
-                        });
+                        }).AddNewtonsoftJson();
 
                         services.AddSingleton<IAuthorizationHandler, AllowAnonymousHandler>();
                     });
                 });
+        }
+        protected void ConstruirControllerUsuario(ControllerBase controller, string idUsuario)
+        {
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, idUsuario),
+                new Claim(ClaimTypes.Email, "test@test.com")
+            }, "TestAuthentication"));
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext() { User = user }
+            };
         }
     }
 }
