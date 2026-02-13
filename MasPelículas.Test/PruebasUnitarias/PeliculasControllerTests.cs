@@ -192,5 +192,159 @@ namespace MasPelículas.Tests.PruebasUnitarias
             Assert.AreEqual(204, resultado.StatusCode);
             mockAlmacenador.Verify(x => x.BorrarArchivo("poster.jpg", "peliculas"), Times.Once);
         }
+
+        [TestMethod]
+        public async Task OrdenarPeliculasPorTituloAscendente()
+        {
+            var nombreBD = Guid.NewGuid().ToString();
+            var context = ConstruirContext(nombreBD);
+
+            context.Peliculas.Add(new Pelicula() { Titulo = "Z" });
+            context.Peliculas.Add(new Pelicula() { Titulo = "A" });
+            await context.SaveChangesAsync();
+
+            var context2 = ConstruirContext(nombreBD);
+            var controller = new PeliculasController(
+                context2,
+                ConfigurarAutoMapper(),
+                new Mock<IAlmacenadorArchivos>().Object,
+                new Mock<ILogger<PeliculasController>>().Object);
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            var filtro = new FiltroPeliculasDTO()
+            {
+                CampoOrdenar = "Titulo",
+                OrdenAscendente = true
+            };
+
+            var respuesta = await controller.Filtrar(filtro);
+
+            Assert.AreEqual("A", respuesta.Value[0].Titulo);
+        }
+
+        [TestMethod]
+        public async Task FiltrarPorTituloSinResultados()
+        {
+            var nombreBD = Guid.NewGuid().ToString();
+            var context = ConstruirContext(nombreBD);
+
+            context.Peliculas.Add(new Pelicula() { Titulo = "Batman" });
+            await context.SaveChangesAsync();
+
+            var context2 = ConstruirContext(nombreBD);
+            var controller = new PeliculasController(
+                context2,
+                ConfigurarAutoMapper(),
+                new Mock<IAlmacenadorArchivos>().Object,
+                new Mock<ILogger<PeliculasController>>().Object);
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            var filtro = new FiltroPeliculasDTO()
+            {
+                Titulo = "Superman"
+            };
+
+            var respuesta = await controller.Filtrar(filtro);
+
+            Assert.AreEqual(0, respuesta.Value.Count);
+        }
+
+        [TestMethod]
+        public async Task OrdenarConCampoInvalido_NoDebeRomper()
+        {
+            var nombreBD = Guid.NewGuid().ToString();
+            var context = ConstruirContext(nombreBD);
+
+            context.Peliculas.Add(new Pelicula() { Titulo = "A" });
+            context.Peliculas.Add(new Pelicula() { Titulo = "B" });
+            await context.SaveChangesAsync();
+
+            var context2 = ConstruirContext(nombreBD);
+            var controller = new PeliculasController(
+                context2,
+                ConfigurarAutoMapper(),
+                new Mock<IAlmacenadorArchivos>().Object,
+                new Mock<ILogger<PeliculasController>>().Object);
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            var filtro = new FiltroPeliculasDTO()
+            {
+                CampoOrdenar = "CampoQueNoExiste"
+            };
+
+            var respuesta = await controller.Filtrar(filtro);
+
+            Assert.IsNotNull(respuesta.Value);
+        }
+
+        [TestMethod]
+        public async Task FiltrarPorGeneroYEnCines()
+        {
+            var nombreBD = Guid.NewGuid().ToString();
+            var context = ConstruirContext(nombreBD);
+
+            var genero = new Genero() { Nombre = "Accion" };
+            context.Add(genero);
+            await context.SaveChangesAsync();
+
+            var peli1 = new Pelicula() { Titulo = "Accion 1", EnCines = true };
+            var peli2 = new Pelicula() { Titulo = "Accion 2", EnCines = false };
+
+            context.AddRange(peli1, peli2);
+            await context.SaveChangesAsync();
+
+            context.Add(new PeliculasGeneros()
+            {
+                GeneroId = genero.Id,
+                PeliculaId = peli1.Id
+            });
+
+            context.Add(new PeliculasGeneros()
+            {
+                GeneroId = genero.Id,
+                PeliculaId = peli2.Id
+            });
+
+            await context.SaveChangesAsync();
+
+            var context2 = ConstruirContext(nombreBD);
+            var controller = new PeliculasController(
+                context2,
+                ConfigurarAutoMapper(),
+                new Mock<IAlmacenadorArchivos>().Object,
+                new Mock<ILogger<PeliculasController>>().Object);
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            var filtro = new FiltroPeliculasDTO()
+            {
+                GeneroId = genero.Id,
+                EnCines = true
+            };
+
+            var respuesta = await controller.Filtrar(filtro);
+
+            Assert.AreEqual(1, respuesta.Value.Count);
+            Assert.AreEqual("Accion 1", respuesta.Value[0].Titulo);
+        }
+
+
+
+
     }
 }
