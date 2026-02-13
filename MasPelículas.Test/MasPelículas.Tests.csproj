@@ -8,11 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="4.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.3" />
+    <PackageReference Include="MSTest" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MasPelículasAPI\MasPelículasAPI.csproj" />
   </ItemGroup>
 
 </Project>
